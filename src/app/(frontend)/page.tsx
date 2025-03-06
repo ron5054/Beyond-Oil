@@ -3,7 +3,7 @@ import Image from 'next/image'
 import { getPayload } from 'payload'
 import React from 'react'
 import { fileURLToPath } from 'url'
-import type { CollectionSlug } from 'payload'
+import { Button } from '@/components/ui/button'
 
 import config from '@/payload.config'
 import './styles.css'
@@ -20,7 +20,7 @@ export default async function HomePage() {
   const fileURL = `vscode://file/${fileURLToPath(import.meta.url)}`
 
   return (
-    <div className="home bg-red-500">
+    <div className="home">
       <div className="content">
         <picture>
           <source srcSet="https://raw.githubusercontent.com/payloadcms/payload/main/packages/ui/src/assets/payload-favicon.svg" />
@@ -31,6 +31,7 @@ export default async function HomePage() {
             width={65}
           />
         </picture>
+        <Button>Click me</Button>
         {!user && <h1>Welcome to your new project.</h1>}
         {user && <h1>Welcome back, {user.email}</h1>}
         <div className="links">

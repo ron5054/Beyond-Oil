@@ -69,6 +69,7 @@ export interface Config {
     users: User;
     media: Media;
     fruits: Fruit;
+    branches: Branch;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
@@ -78,6 +79,7 @@ export interface Config {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     fruits: FruitsSelect<false> | FruitsSelect<true>;
+    branches: BranchesSelect<false> | BranchesSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -166,6 +168,23 @@ export interface Fruit {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "branches".
+ */
+export interface Branch {
+  id: number;
+  branchName: string;
+  branchCode: string;
+  phoneNumber?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zipCode?: string | null;
+  country: 'il' | 'us';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
@@ -182,6 +201,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'fruits';
         value: number | Fruit;
+      } | null)
+    | ({
+        relationTo: 'branches';
+        value: number | Branch;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -268,6 +291,22 @@ export interface MediaSelect<T extends boolean = true> {
  */
 export interface FruitsSelect<T extends boolean = true> {
   name?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "branches_select".
+ */
+export interface BranchesSelect<T extends boolean = true> {
+  branchName?: T;
+  branchCode?: T;
+  phoneNumber?: T;
+  address?: T;
+  city?: T;
+  state?: T;
+  zipCode?: T;
+  country?: T;
   updatedAt?: T;
   createdAt?: T;
 }
