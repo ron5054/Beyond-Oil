@@ -7,7 +7,7 @@ import { ChefHat } from 'lucide-react'
 
 const Message = ({ user }: { user: User }) => {
   return (
-    <div className="flex items-center justify-center flex-col gap-16 bg-[#eff4f9] p-4 h-screen">
+    <div className="flex items-center justify-center flex-col gap-16 bg-[#eff4f9] p-4 h-[100dvh]">
       <h1 className="text-2xl font-bold text-green-500 text-center mt-10">
         Wellcom, {user.name} 👋
       </h1>
