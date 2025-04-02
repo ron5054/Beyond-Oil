@@ -40,10 +40,10 @@ export const sendOTP = async (countryCode: string, phoneNumber: string): Promise
     })
 
     // Use the actual production domain for Web OTP API
-    const domain = 'beyond-oil-tan.vercel.app'
+    const domain = 'beyond-oil-ten.vercel.app'
 
     await twilioClient.messages.create({
-      body: `Your Beyond Oil login code is: ${otp}. Valid for 5 minutes. @${domain} #${otp}`,
+      body: `${otp} is your Beyond Oil verification code. Valid for 5 minutes. @${domain} #${otp}`,
       to: `${countryCode}${phoneNumber.replace(/[^\d]/g, '')}`,
       from: process.env.TWILIO_PHONE_NUMBER || '',
     })

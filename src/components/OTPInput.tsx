@@ -50,8 +50,12 @@ const OTPInput: React.FC<OTPInputProps> = ({ length, value, onChange }) => {
 
         // Extract the code if available
         if (credential && 'code' in credential) {
+          // Fill the OTP inputs with the received code
           const otpCode = credential.code.slice(0, length)
           onChange(otpCode)
+
+          // Log success for debugging
+          console.log('OTP auto-filled successfully:', otpCode)
         }
       } catch (error: unknown) {
         // Only log non-abort errors
@@ -61,6 +65,7 @@ const OTPInput: React.FC<OTPInputProps> = ({ length, value, onChange }) => {
       }
     }
 
+    // Call the setup function
     setupOTPListener()
 
     // Clean up by aborting the credential request
