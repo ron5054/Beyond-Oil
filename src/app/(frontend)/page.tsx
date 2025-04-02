@@ -5,14 +5,12 @@ import LoginForm from '@/components/LoginForm'
 import Image from 'next/image'
 import payload from '@/payloadClient'
 import Message from '@/components/Message'
+import { isMobileFromUserAgent } from '@/components/ui/use-mobile'
 
 const HomePage = async () => {
   const headers = await getHeaders()
   const userAgent = headers.get('user-agent') || ''
-  const isMobile =
-    /Mobile|webOS|BlackBerry|IEMobile|MeeGo|mini|Fennec|Android|iP(ad|od|hone)|Windows Phone|Opera Mini|SamsungBrowser|UCBrowser|Chrome Mobile|Firefox Mobile|Safari Mobile|Edge Mobile|Sony|LG|HTC|Nexus|OnePlus|Xiaomi|Huawei|ZTE|Vivo|OPPO|Realme|Asus|Lenovo|Motorola|Nokia|Samsung/i.test(
-      userAgent,
-    )
+  const isMobile = isMobileFromUserAgent(userAgent)
 
   const { user } = await payload.auth({ headers })
 
