@@ -32,76 +32,28 @@ const OTPInput: React.FC<OTPInputProps> = ({ length, value, onChange }) => {
 
   // Set up Web OTP API for automatic SMS code capture
   useEffect(() => {
-    // Skip if browser doesn't support Web OTP API
-    if (typeof window === 'undefined') {
+    // Skip if browser doesn't support AbortController or Web OTP API
+    if (typeof AbortController === 'undefined' || !('OTPCredential' in window)) {
       return
     }
 
-    // Check if OTP API is available (since TypeScript doesn't know about it)
-    if (!('credentials' in navigator) || !('OTPCredential' in window)) {
-      console.log('Web OTP API not supported in this browser')
-      return
-    }
-
-    // Create abort controller for cleanup
     const ac = new AbortController()
 
     const setupOTPListener = async () => {
       try {
-        console.log('Setting up Web OTP API listener...')
-
-        // Type definition for OTP credential
-        interface OTPCredential {
-          code: string
-        }
-
-        // Use any type for now since TypeScript doesn't recognize the OTP property
-        const credential = (await (navigator.credentials as any).get({
+        // Use the appropriate type for navigator.credentials.get
+        // Without specifying the exact credential type that TypeScript doesn't know about
+        const credential = await (navigator.credentials as any).get({
           otp: { transport: ['sms'] },
           signal: ac.signal,
-        })) as OTPCredential | null
+        })
 
-        if (!credential) {
-          console.log('No OTP credential received')
-          return
-        }
-
-        console.log('OTP credential received:', credential)
-
-        // Check if we received a valid credential with code
-        if ('code' in credential) {
-          // Get the OTP code and limit to our expected length
+        // Extract the code if available
+        if (credential && 'code' in credential) {
           const otpCode = credential.code.slice(0, length)
-          console.log('Received OTP code:', otpCode)
-
-          // Apply the OTP manually to each input field to ensure UI updates
-          for (let i = 0; i < otpCode.length && i < length; i++) {
-            const inputRef = inputRefs.current[i]
-            if (inputRef) {
-              const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-                window.HTMLInputElement.prototype,
-                'value',
-              )?.set
-
-              if (nativeInputValueSetter) {
-                nativeInputValueSetter.call(inputRef, otpCode[i])
-
-                // Dispatch input event to trigger React's synthetic events
-                const event = new Event('input', { bubbles: true })
-                inputRef.dispatchEvent(event)
-              }
-            }
-          }
-
-          // Update the state once to ensure proper form state
           onChange(otpCode)
-
-          // Focus the last input to indicate completion to the user
-          if (inputRefs.current[length - 1]) {
-            inputRefs.current[length - 1]?.focus()
-          }
         }
-      } catch (error) {
+      } catch (error: unknown) {
         // Only log non-abort errors
         if (!(error instanceof DOMException && error.name === 'AbortError')) {
           console.error('Error with Web OTP API:', error)
@@ -109,14 +61,10 @@ const OTPInput: React.FC<OTPInputProps> = ({ length, value, onChange }) => {
       }
     }
 
-    // Start listening for OTP
     setupOTPListener()
 
-    // Clean up by aborting the credential request when component unmounts
-    return () => {
-      console.log('Cleaning up Web OTP listener')
-      ac.abort()
-    }
+    // Clean up by aborting the credential request
+    return () => ac.abort()
   }, [length, onChange])
 
   // Handle input change
@@ -166,7 +114,8 @@ const OTPInput: React.FC<OTPInputProps> = ({ length, value, onChange }) => {
 
     if (numericData) {
       // Fill as many inputs as we have characters
-      onChange(numericData.padEnd(length, '').slice(0, length))
+      const newValue = numericData.padEnd(length, '').split('').slice(0, length)
+      onChange(newValue.join(''))
 
       // Focus the next empty input or the last one if all filled
       const nextIndex = Math.min(numericData.length, length - 1)
