@@ -51,8 +51,26 @@ const OTPInput: React.FC<OTPInputProps> = ({ length, value, onChange }) => {
         // Extract the code if available
         if (credential && 'code' in credential) {
           const otpCode = credential.code.slice(0, length)
+
+          // Update the parent component with the new OTP value
           onChange(otpCode)
-          await navigator.clipboard.writeText(otpCode)
+
+          // Force each input field to update with the correct digit
+          // This is crucial for the UI to reflect the change
+          otpCode.split('').forEach((digit: string, index: number) => {
+            if (inputRefs.current[index]) {
+              const inputEl = inputRefs.current[index]
+              if (inputEl) {
+                // Update the value directly in the DOM element
+                inputEl.value = digit
+              }
+            }
+          })
+
+          // Focus the last input after auto-filling
+          if (inputRefs.current[length - 1]) {
+            inputRefs.current[length - 1]?.focus()
+          }
         }
       } catch (error: unknown) {
         // Only log non-abort errors
