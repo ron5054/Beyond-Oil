@@ -1,47 +1,49 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import OTPInput from './OTPInput'
 import { sendOTP, verifyOTP } from '@/lib/authActions'
-import { User } from '@/payload-types'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import CountryCodeCombobox from './CountryCodeCombobox'
+import { useForm } from '@tanstack/react-form'
+import { LoginFormData } from 'schemas'
 
 const LoginForm = () => {
   const router = useRouter()
-  const [phoneNumber, setPhoneNumber] = useState('')
-  const [countryCode, setCountryCode] = useState('+1')
-  const [otp, setOtp] = useState('')
   const [showOtpInput, setShowOtpInput] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
-  const [user, setUser] = useState<User | null>(null)
 
-  useEffect(() => {
-    if (otp.length === 6) handleVerifyOTP()
-  }, [otp])
+  // @ts-ignore - Workaround for type issues with zod schema
+  const form = useForm<LoginFormData>({
+    defaultValues: {
+      phoneNumber: '',
+      countryCode: '+1',
+      otp: '',
+    },
+    onSubmit: async ({ value }) => {
+      try {
+        await handleSendOTP(value)
+      } catch (error) {
+        console.error('Error in form submission:', error)
+        setError(error instanceof Error ? error.message : 'An unexpected error occurred')
+      }
+    },
+  })
 
-  const handleSendOTP = async (e?: React.FormEvent) => {
-    e?.preventDefault()
-
-    if (!phoneNumber) return
+  const handleSendOTP = async (values: LoginFormData) => {
+    if (!values.phoneNumber) return
 
     try {
       setIsVerifying(true)
       setError(null)
       setMessage(null)
 
-      const { success, error, message } = await sendOTP(countryCode, phoneNumber)
+      const { success, error, message } = await sendOTP(values.countryCode, values.phoneNumber)
 
       if (success) {
         setMessage(message || 'Verification code sent')
@@ -54,21 +56,18 @@ const LoginForm = () => {
     }
   }
 
-  const handleVerifyOTP = async (e?: React.FormEvent) => {
-    e?.preventDefault()
-
-    if (!phoneNumber || !otp || otp.length < 6) return
+  const handleVerifyOTP = async (values: LoginFormData) => {
+    if (!values.phoneNumber || !values.otp || values.otp.length < 6) return
 
     try {
       setIsVerifying(true)
       setError(null)
       setMessage(null)
 
-      const { success, error, user } = await verifyOTP(phoneNumber, otp)
+      const { success, error, user } = await verifyOTP(values.phoneNumber, values.otp)
 
       if (success && user) {
         setIsLoggingIn(true)
-        setUser(user)
 
         if (user.role === 'admin') {
           router.push('/dashboard')
@@ -90,7 +89,7 @@ const LoginForm = () => {
       setIsVerifying(true)
       setError(null)
 
-      const result = await sendOTP(countryCode, phoneNumber)
+      const result = await sendOTP(form.state.values.countryCode, form.state.values.phoneNumber)
 
       if (result.success) setMessage('Verification code resent')
       else setError(result.error || 'Failed to resend verification code')
@@ -101,21 +100,40 @@ const LoginForm = () => {
     }
   }
 
-  const getButtonText = () => {
-    if (showOtpInput) {
-      if (isLoggingIn) return 'Logging in...'
-      if (isVerifying) return 'Verifying...'
+  const getButtonText = (
+    isShowingOtp: boolean,
+    isVerifyingState: boolean,
+    isLoggingInState: boolean,
+  ) => {
+    if (isShowingOtp) {
+      if (isLoggingInState) return 'Logging in...'
+      if (isVerifyingState) return 'Verifying...'
       return 'Verify'
     } else {
-      if (isVerifying) return 'Sending code...'
+      if (isVerifyingState) return 'Sending code...'
       return 'Send Code'
     }
+  }
+
+  const getHeadingText = (
+    isShowingOtp: boolean,
+    isVerifyingState: boolean,
+    isLoggingInState: boolean,
+  ) => {
+    if (isLoggingInState) return 'Logging in...'
+    if (isVerifyingState && isShowingOtp) return 'Verifying...'
+    if (isShowingOtp) return 'Verify Your Number'
+    return 'Enter Your Phone Number'
   }
 
   return (
     <>
       <form
-        onSubmit={showOtpInput ? handleVerifyOTP : handleSendOTP}
+        onSubmit={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          form.handleSubmit()
+        }}
         className="space-y-4 py-4 bg-white rounded-lg p-6 border border-gray-200 shadow-sm absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl !max-w-[26rem]"
       >
         {error && <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm">{error}</div>}
@@ -124,7 +142,7 @@ const LoginForm = () => {
         )}
 
         <h1 className="text-2xl font-bold text-center">
-          {showOtpInput ? 'Verify Your Number' : 'Enter Your Phone Number'}
+          {getHeadingText(showOtpInput, isVerifying, isLoggingIn)}
         </h1>
 
         {showOtpInput ? (
@@ -134,7 +152,27 @@ const LoginForm = () => {
             </p>
 
             <div className="py-4">
-              <OTPInput length={6} value={otp} onChange={setOtp} />
+              <form.Field name="otp">
+                {(field) => (
+                  <>
+                    <OTPInput
+                      length={6}
+                      value={field.state.value || ''}
+                      onChange={(value: string) => {
+                        handleVerifyOTP({ ...form.state.values, otp: value })
+                        field.handleChange(value)
+                      }}
+                    />
+                    {field.state.meta.errors && field.state.meta.errors.length > 0 && (
+                      <div className="text-xs text-red-500 text-center mt-2">
+                        {typeof field.state.meta.errors[0] === 'string'
+                          ? field.state.meta.errors[0]
+                          : 'Invalid value'}
+                      </div>
+                    )}
+                  </>
+                )}
+              </form.Field>
             </div>
 
             <div className="flex justify-center gap-2 pt-2 text-sm">
@@ -150,7 +188,6 @@ const LoginForm = () => {
                 Resend code
               </button>
             </div>
-
             <button
               type="button"
               onClick={() => setShowOtpInput(false)}
@@ -178,38 +215,65 @@ const LoginForm = () => {
           </>
         ) : (
           <>
-            <div className="grid grid-cols-[1fr_2fr] gap-2">
-              <Select name="countryCode" value={countryCode} onValueChange={setCountryCode}>
-                <SelectTrigger>
-                  <SelectValue placeholder="+1" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="+1">+1</SelectItem>
-                  <SelectItem value="+972">+972</SelectItem>
-                </SelectContent>
-              </Select>
-              <Input
-                id="phoneNumber"
-                name="phoneNumber"
-                onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
-                disabled={isVerifying}
-                required
-                placeholder="xxxxxxxxx"
-              />
+            <div className="grid grid-cols-[1fr_1.5fr] gap-2">
+              <form.Field name="countryCode">
+                {(field) => (
+                  <CountryCodeCombobox
+                    value={field.state.value}
+                    onChange={(value) => field.handleChange(value)}
+                  />
+                )}
+              </form.Field>
+
+              <form.Field name="phoneNumber">
+                {(field) => (
+                  <>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value.replace(/[^0-9]/g, ''))}
+                      onBlur={field.handleBlur}
+                      disabled={isVerifying}
+                      required
+                      placeholder="xxxxxxxxx"
+                    />
+                    {field.state.meta.errors && field.state.meta.errors.length > 0 && (
+                      <div className="text-xs text-red-500">
+                        {typeof field.state.meta.errors[0] === 'string'
+                          ? field.state.meta.errors[0]
+                          : 'Invalid value'}
+                      </div>
+                    )}
+                  </>
+                )}
+              </form.Field>
             </div>
 
             <div className="pt-2">
-              <Button
-                type="submit"
-                disabled={!phoneNumber || isVerifying}
-                className={`w-full !cursor-pointer ${
-                  !phoneNumber || isVerifying
-                    ? 'bg-gray-400 text-white cursor-not-allowed'
-                    : 'bg-[#55bb47] text-white'
-                }`}
+              <form.Subscribe
+                selector={(state) => [
+                  !showOtpInput ? !!state.values.phoneNumber : state.values.otp?.length === 6,
+                  isVerifying,
+                  isLoggingIn,
+                ]}
               >
-                {getButtonText()}
-              </Button>
+                {([isValid, isVerifyingState, isLoggingInState]) => (
+                  <>
+                    <Button
+                      type="submit"
+                      disabled={!isValid || isVerifyingState || isLoggingInState}
+                      className={`w-full !cursor-pointer ${
+                        !isValid || isVerifyingState || isLoggingInState
+                          ? 'bg-gray-400 text-white cursor-not-allowed'
+                          : 'bg-[#55bb47] text-white'
+                      }`}
+                    >
+                      {getButtonText(showOtpInput, isVerifyingState, isLoggingInState)}
+                    </Button>
+                  </>
+                )}
+              </form.Subscribe>
             </div>
           </>
         )}

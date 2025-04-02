@@ -68,7 +68,7 @@ const BranchPreview = ({
           <BranchLogo logo={branch.logo} />
           <div className="ml-4">
             <div className="text-sm font-medium text-gray-900">{branch.branchName}</div>
-            <div className="text-sm text-gray-500">{branch.chain}</div>
+            <div className="text-sm text-gray-500">{branch.chainName}</div>
           </div>
         </div>
       </td>

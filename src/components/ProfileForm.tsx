@@ -77,7 +77,7 @@ export default function ProfileForm({
     if (!user) return
 
     try {
-      await toggle('users', user.id, !user.isActive)
+      toggle('users', user.id, !user.isActive)
       router.refresh()
       if (onSuccess) {
         onSuccess()

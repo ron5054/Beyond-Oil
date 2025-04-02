@@ -19,7 +19,7 @@ const FryerCard: React.FC<FryerCardProps> = ({
 
   const handleToggle = async (checked: boolean) => {
     try {
-      await toggle('fryers', id, checked)
+      toggle('fryers', id, checked)
       setActive(checked)
     } catch (error) {
       console.error('Error toggling fryer:', error)

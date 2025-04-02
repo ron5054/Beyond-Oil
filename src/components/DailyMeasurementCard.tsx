@@ -19,7 +19,7 @@ const DailyMeasurementCard: React.FC<DailyMeasurementCardProps> = ({
 
   const handleToggle = async (checked: boolean) => {
     try {
-      await toggle('dailyMeasurements', id, checked)
+      toggle('dailyMeasurements', id, checked)
       setActive(checked)
     } catch (error) {
       console.error('Error toggling input form:', error)

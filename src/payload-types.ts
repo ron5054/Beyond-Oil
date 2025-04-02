@@ -156,7 +156,7 @@ export interface User {
  */
 export interface Branch {
   id: number;
-  chain: string;
+  chainName: 'KFC' | 'McDonalds' | 'Burger King' | 'Wendys' | 'Taco Bell' | 'Subway' | 'Papa Johns' | 'Other';
   logo?: string | null;
   /**
    * Select an hour (0-23)
@@ -443,7 +443,7 @@ export interface MediaSelect<T extends boolean = true> {
  * via the `definition` "branches_select".
  */
 export interface BranchesSelect<T extends boolean = true> {
-  chain?: T;
+  chainName?: T;
   logo?: T;
   filterTime?: T;
   timezone?: T;

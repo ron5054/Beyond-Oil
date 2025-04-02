@@ -19,7 +19,7 @@ const FoodSampleCard: React.FC<FoodSampleCardProps> = ({
 
   const handleToggle = async (checked: boolean) => {
     try {
-      await toggle('foodSamples', id, checked)
+      toggle('foodSamples', id, checked)
       setActive(checked)
     } catch (error) {
       console.error('Error toggling food sample:', error)

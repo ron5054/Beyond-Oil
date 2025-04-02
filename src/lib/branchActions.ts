@@ -11,16 +11,15 @@ import { BranchCreate } from 'interfaces'
 import { Branch } from '@/payload-types'
 import { add, getAll, remove } from '@/lib/crudActions'
 import { revalidatePath } from 'next/cache'
+import { branchSchema } from 'schemas'
 
 export const addBranch = async (collection: CollectionSlug, branch: BranchCreate) => {
   try {
-    if (!branch.manager) {
-      branch.manager = null
-    }
+    const validatedBranch = branchSchema.parse(branch)
 
     const data = await payload.create({
       collection,
-      data: branch,
+      data: validatedBranch,
     })
     revalidatePath('/dashboard/overview')
     return data

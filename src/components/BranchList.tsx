@@ -37,7 +37,7 @@ const BranchList = ({
 
   const filteredBranches = branches.filter(
     (branch) =>
-      (selectedChain === 'all' || branch.chain === selectedChain) &&
+      (selectedChain === 'all' || branch.chainName === selectedChain) &&
       (!searchQuery || branch.branchName.toLowerCase().includes(searchQuery.toLowerCase())),
   )
 
@@ -58,11 +58,13 @@ const BranchList = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Chains</SelectItem>
-                  {Array.from(new Set(branches.map((branch) => branch.chain))).map((chainName) => (
-                    <SelectItem key={chainName} value={chainName}>
-                      {chainName}
-                    </SelectItem>
-                  ))}
+                  {Array.from(new Set(branches.map((branch) => branch.chainName))).map(
+                    (chainName) => (
+                      <SelectItem key={chainName} value={chainName}>
+                        {chainName}
+                      </SelectItem>
+                    ),
+                  )}
                 </SelectContent>
               </Select>
             </div>

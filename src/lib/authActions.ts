@@ -6,6 +6,7 @@ import { cookies } from 'next/headers'
 import { User } from '@/payload-types'
 import { update } from '@/lib/crudActions'
 import { revalidatePath } from 'next/cache'
+import { sendOTPSchema, verifyOTPSchema } from 'schemas'
 
 const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
 
@@ -17,8 +18,11 @@ export interface OTPResponse {
 }
 
 export const sendOTP = async (countryCode: string, phoneNumber: string): Promise<OTPResponse> => {
+  const validatedData = sendOTPSchema.parse({ countryCode, phoneNumber })
+
   try {
-    const { user, error: userError } = await _findUserByPhoneNumber(phoneNumber)
+    const { user, error: userError } = await _findUserByPhoneNumber(validatedData.phoneNumber)
+
     if (userError || !user) {
       return {
         success: false,
@@ -27,6 +31,7 @@ export const sendOTP = async (countryCode: string, phoneNumber: string): Promise
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString()
+    console.log('OTP:', otp)
 
     // Store OTP in user document with 5-minute expiration
     await update('users', Number(user.id), {
@@ -37,11 +42,11 @@ export const sendOTP = async (countryCode: string, phoneNumber: string): Promise
     // Use the actual production domain for Web OTP API
     const domain = 'beyond-oil-tan.vercel.app'
 
-    await twilioClient.messages.create({
-      body: `Your Beyond Oil login code is: ${otp}. Valid for 5 minutes. @${domain} #${otp}`,
-      to: `${countryCode}${phoneNumber.replace(/[^\d]/g, '')}`,
-      from: process.env.TWILIO_PHONE_NUMBER || '',
-    })
+    // await twilioClient.messages.create({
+    //   body: `Your Beyond Oil login code is: ${otp}. Valid for 5 minutes. @${domain} #${otp}`,
+    //   to: `${countryCode}${phoneNumber.replace(/[^\d]/g, '')}`,
+    //   from: process.env.TWILIO_PHONE_NUMBER || '',
+    // })
 
     return {
       success: true,
@@ -62,12 +67,15 @@ export const _findUserByPhoneNumber = async (
   const users = await payload.find({
     collection: 'users',
     where: {
-      phoneNumber: {
-        equals: phoneNumber,
-      },
-      isActive: {
-        equals: true,
-      },
+      and: [
+        {
+          or: [
+            { phoneNumber: { equals: phoneNumber } },
+            { phoneNumber: { equals: `0${phoneNumber}` } },
+          ],
+        },
+        { isActive: { equals: true } },
+      ],
     },
   })
 
@@ -145,7 +153,9 @@ const _setAuthCookie = async (token: string): Promise<void> => {
 
 export const verifyOTP = async (phoneNumber: string, otp: string): Promise<OTPResponse> => {
   try {
-    const { user, error: userError } = await _findUserByPhoneNumber(phoneNumber)
+    const validatedData = verifyOTPSchema.parse({ phoneNumber, countryCode: '+1', otp })
+
+    const { user, error: userError } = await _findUserByPhoneNumber(validatedData.phoneNumber)
     if (userError || !user) {
       return {
         success: false,
@@ -153,7 +163,7 @@ export const verifyOTP = async (phoneNumber: string, otp: string): Promise<OTPRe
       }
     }
 
-    const { valid, error: otpError } = await _validateOTP(user, otp)
+    const { valid, error: otpError } = await _validateOTP(user, validatedData.otp as string)
     if (!valid) {
       return {
         success: false,

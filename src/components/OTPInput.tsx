@@ -7,15 +7,9 @@ interface OTPInputProps {
   length: number
   value: string
   onChange: (value: string) => void
-  onComplete?: () => void
 }
 
-// Type definition for Web OTP API
-interface OTPCredential extends Credential {
-  code: string
-}
-
-const OTPInput: React.FC<OTPInputProps> = ({ length, value, onChange, onComplete }) => {
+const OTPInput: React.FC<OTPInputProps> = ({ length, value, onChange }) => {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
 
   // Initialize array with current value or empty strings
@@ -35,13 +29,6 @@ const OTPInput: React.FC<OTPInputProps> = ({ length, value, onChange, onComplete
 
     return () => clearTimeout(timer)
   }, [])
-
-  // Check if OTP is complete and trigger onComplete callback
-  useEffect(() => {
-    if (value.length === length && onComplete) {
-      onComplete()
-    }
-  }, [value, length, onComplete])
 
   // Set up Web OTP API for automatic SMS code capture
   useEffect(() => {
@@ -65,11 +52,7 @@ const OTPInput: React.FC<OTPInputProps> = ({ length, value, onChange, onComplete
         if (credential && 'code' in credential) {
           const otpCode = credential.code.slice(0, length)
           onChange(otpCode)
-
-          // Automatically trigger form submission if onComplete is provided
-          if (onComplete) {
-            onComplete()
-          }
+          await navigator.clipboard.writeText(otpCode)
         }
       } catch (error: unknown) {
         // Only log non-abort errors
@@ -83,11 +66,12 @@ const OTPInput: React.FC<OTPInputProps> = ({ length, value, onChange, onComplete
 
     // Clean up by aborting the credential request
     return () => ac.abort()
-  }, [length, onChange, onComplete])
+  }, [length, onChange])
 
   // Handle input change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const newChar = e.target.value.slice(-1)
+    if (newChar && !/^\d$/.test(newChar)) return
 
     // Create a new array from the current value
     const newValue = [...valueArray]
@@ -99,15 +83,6 @@ const OTPInput: React.FC<OTPInputProps> = ({ length, value, onChange, onComplete
     // Move to next input if this one is filled and not the last
     if (newChar && index < length - 1) {
       inputRefs.current[index + 1]?.focus()
-    }
-
-    // Check if all inputs are filled and call onComplete
-    if (newChar && index === length - 1 && onComplete) {
-      // Check if all digits are filled
-      const isComplete = newValue.every((digit) => digit !== '')
-      if (isComplete) {
-        onComplete()
-      }
     }
   }
 
@@ -146,11 +121,6 @@ const OTPInput: React.FC<OTPInputProps> = ({ length, value, onChange, onComplete
       // Focus the next empty input or the last one if all filled
       const nextIndex = Math.min(numericData.length, length - 1)
       inputRefs.current[nextIndex]?.focus()
-
-      // If all digits are filled after paste, call onComplete
-      if (numericData.length >= length && onComplete) {
-        onComplete()
-      }
     }
   }
 
