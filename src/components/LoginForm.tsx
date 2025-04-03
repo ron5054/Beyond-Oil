@@ -68,14 +68,7 @@ const LoginForm = () => {
 
       if (success && user) {
         setIsLoggingIn(true)
-
-        if (user.role === 'admin') {
-          router.push('/dashboard')
-        } else if (user.role === 'chef') {
-          router.push('/client')
-        } else {
-          router.push('/')
-        }
+        router.refresh()
       } else setError(error || 'Invalid verification code')
     } catch (err) {
       setError('An unexpected error occurred')
